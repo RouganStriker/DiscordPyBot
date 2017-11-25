@@ -20,10 +20,10 @@ listenerClient.run(os.environ['BDO_BOSS_TRACKER_LISTENER_TOKEN'])
 # First, we must attach an event signalling when the bot has been
 # closed to the client itself so we know when to fully close the event loop.
 
-Entry = namedtuple('Entry', 'client event token')
+Entry = namedtuple('Entry', 'client event token bot')
 entries = [
-    Entry(client=relayClient, event=asyncio.Event(), token=os.environ[RELAY_TOKEN_VAR]),
-    Entry(client=listenerClient, event=asyncio.Event(), token=os.environ['BDO_BOSS_TRACKER_LISTENER_TOKEN'])
+    Entry(client=relayClient, event=asyncio.Event(), token=os.environ[RELAY_TOKEN_VAR], bot=True),
+    Entry(client=listenerClient, event=asyncio.Event(), token=os.environ['BDO_BOSS_TRACKER_LISTENER_TOKEN'], bot=False)
 ]
 
 # Then, we should login to all our clients and wrap the connect call
@@ -33,7 +33,7 @@ loop = asyncio.get_event_loop()
 
 async def login():
     for e in entries:
-        await e.client.login(e.token)
+        await e.client.login(e.token, bot=e.bot)
 
 async def wrapped_connect(entry):
     try:

@@ -8,10 +8,7 @@ class BaseClient(discord.Client):
 
     @asyncio.coroutine
     def on_ready(self):
-        print('{0}: Logged in as'.format(self))
-        print(self.user.name)
-        print(self.user.id)
-        print('------')
+        print('{0}: Logged in as {1}'.format(self, self.user.name))
 
     @asyncio.coroutine
     def on_message(self, message):
@@ -22,7 +19,7 @@ class BaseClient(discord.Client):
         self.handle_message_delete(message)
 
     def handle_message(self, message):
-        print('{0}: Received message - {1}'.format(message, self))
+        print('{0}: Received message - {1}'.format(self, message.__dict__))
 
     def handle_message_delete(self, message):
         pass
