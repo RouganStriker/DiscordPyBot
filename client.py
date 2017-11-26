@@ -75,7 +75,7 @@ class ListenerClient(BaseClient):
             yield from self.send_message(message.channel, content=self.config['customStrings']['autoReply'])
             return
         if (message.server.id != self.config['BDOBossDiscord']['GuildID'] or
-            message.author.id not in self.config['BDOBossDiscord']['BotID']):
+            message.author.id not in self.config['BDOBossDiscord']['BotIDs']):
             # Exit early if the message is not from the boss discord or not send by the bot user
             return
 
