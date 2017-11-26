@@ -48,6 +48,7 @@ class ListenerClient(BaseClient):
             bdo_config[field] = str(bdo_config[field])
 
         bdo_config['StatusChannelIDs'] = [str(channel_id) for channel_id in bdo_config['StatusChannelIDs']]
+        bdo_config['BotIDs'] = [str(bot_id) for bot_id in bdo_config['BotIDs']]
 
     @asyncio.coroutine
     def on_ready(self):
@@ -74,7 +75,7 @@ class ListenerClient(BaseClient):
             yield from self.send_message(message.channel, content=self.config['customStrings']['autoReply'])
             return
         if (message.server.id != self.config['BDOBossDiscord']['GuildID'] or
-            message.author.id != self.config['BDOBossDiscord']['BotID']):
+            message.author.id not in self.config['BDOBossDiscord']['BotID']):
             # Exit early if the message is not from the boss discord or not send by the bot user
             return
 
@@ -128,7 +129,7 @@ class RelayClient(BaseClient):
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
-    def queue_message(self, delayed_obj, new_message):
+    def queue_message(self, delayed_obj, new_message, clear_messages=None):
         with (yield from delayed_obj.lock):
             initiate_send = not delayed_obj.is_sending
 
@@ -140,8 +141,8 @@ class RelayClient(BaseClient):
                 embeds = []
                 for attachment in new_message.attachments:
                     new_embed = discord.Embed()
-                    new_embed.set_image(attachment.url)
-                    new_embed.set_author(new_message.author.display_name, icon_url=new_message.author.avatar_url)
+                    new_embed.set_image(url=attachment['url'])
+                    new_embed.set_author(name=new_message.author.display_name, icon_url=new_message.author.avatar_url)
                     embeds.append(new_embed)
                 delayed_obj.embeds = embeds
 
@@ -152,11 +153,15 @@ class RelayClient(BaseClient):
         with (yield from delayed_obj.lock):
             logger.debug("Relaying embeds and message {0} to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
-                if delayed_obj.content:
-                    yield from self.send_message(channel, content=delayed_obj.content)
+                if clear_messages:
+                    yield from self.purge_from(channel, check=clear_messages)
+
                 if delayed_obj.embeds:
                     for embed in delayed_obj.embeds:
-                        yield from self.send_message(channel, embed=embed)
+                        yield from self.send_message(channel, delayed_obj.content, embed=embed)
+                        delayed_obj.content = None  # Send it with the first embed
+                elif delayed_obj.content:
+                    yield from self.send_message(channel, delayed_obj.content)
 
             delayed_obj.content = None
             delayed_obj.embeds = None
@@ -165,14 +170,24 @@ class RelayClient(BaseClient):
     @asyncio.coroutine
     def on_boss_timer_update(self, timer_message):
         logger.debug("Relay received Boss Timer Message {0}".format(timer_message.content))
-        yield from self.queue_message(self.timer_message, timer_message)
+        yield from self.queue_message(self.timer_message, timer_message, clear_messages=lambda message: True)
 
     @asyncio.coroutine
     def on_boss_notification_update(self, notification_message):
-        logger.debug("Relay received Boss Notification Message {0}".format(notification_message.content))
-        yield from self.queue_message(self.notification_message, notification_message)
+        # We use boss status for notification and mentioning
+        pass
 
     @asyncio.coroutine
     def on_boss_status_update(self, status_message):
         logger.debug("Relay received Boss Update Message {0}".format(status_message.content))
-        yield from self.queue_message(self.status_message, status_message)
+        boss_name = None
+
+        if status_message.attachments:
+            boss_name = status_message.attachments[0].get('filename', '').split('.', maxsplit=1)[0].lower()
+        if boss_name:
+            # Update message content
+            status_message.content = "@everyone {0} has spawned".format(boss_name)
+
+        delete_check = lambda message: boss_name in message.content
+
+        yield from self.queue_message(self.status_message, status_message, clear_messages=delete_check)
