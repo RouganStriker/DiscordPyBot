@@ -133,7 +133,7 @@ class RelayClient(BaseClient, commands.Bot):
         logger.debug("Found {} notification channels".format(len(notification_channels)))
 
         self.timer_message = DelayedMessage(self.timer_channels)
-        self.status_message = DelayedMessage(self.status_channels)
+        self.status_messages = {boss: DelayedMessage(self.status_channels) for boss in self.config['BDOBossDiscord']['BossNameMapping'].keys()}
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
@@ -230,14 +230,14 @@ class RelayClient(BaseClient, commands.Bot):
                 embeds.append(new_embed)
             status_message.embeds = embeds
 
-            await self.queue_message(self.status_message, status_message, clear_messages=existing_check, update_existing=existing_check)
+            await self.queue_message(self.status_messages[boss_name], status_message, clear_messages=existing_check, update_existing=existing_check)
             return
 
         boss_name = re.search(r'({})(?= > all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
 
         if boss_name:
             # All clear message
-            for channel in self.status_message.channels:
+            for channel in self.status_channels:
                 await self.purge_from(channel, check=existing_check)
                 return
 
