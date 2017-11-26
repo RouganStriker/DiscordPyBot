@@ -140,9 +140,9 @@ class RelayClient(BaseClient):
             if channel.name.lower() == self.config['statusUpdateChannelName'].lower():
                 status_channels.append(channel)
 
-        logger.debug("Found", len(timer_channels), "timer channels")
-        logger.debug("Found", len(status_channels), "status update channels")
-        logger.debug("Found", len(notification_channels), "notification channels")
+        logger.debug("Found {} timer channels".format(len(timer_channels)))
+        logger.debug("Found {} status update channels".format(len(status_channels)))
+        logger.debug("Found {} notification channels".format(len(notification_channels)))
 
         self.timer_message = MessageAggregator(self, timer_channels)
         self.status_message = MessageAggregator(self, status_channels)
