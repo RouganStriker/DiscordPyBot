@@ -1,5 +1,6 @@
 import asyncio
 import discord
+from discord.ext import commands
 import json
 import logging
 import os
@@ -102,9 +103,10 @@ class DelayedMessage(object):
         self.channels = channels
 
 
-class RelayClient(BaseClient):
+class RelayClient(BaseClient, commands.Bot):
     def __init__(self, *args, **kwargs):
-        super(RelayClient, self).__init__(*args, **kwargs)
+        description = "BDO Relay Bot"
+        super(RelayClient, self).__init__(command_prefix='!', description=description, *args, **kwargs)
 
         self.boss_updates_cache = {name: None for name in self.config['BDOBossDiscord']['BossNameMapping'].keys()}
 
