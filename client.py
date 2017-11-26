@@ -190,6 +190,16 @@ class RelayClient(BaseClient, commands.Bot):
     @asyncio.coroutine
     async def on_boss_timer_update(self, timer_message):
         logger.debug("Relay received Boss Timer Message {0}".format(timer_message.content))
+
+        # Recreate embeds
+        embeds = []
+        for embed in timer_message.embeds:
+            discord.Embed(description=embed.get('description'),
+                          color=embed.get('color'),
+                          title=embed.get('title'))
+            embeds.append(embed)
+        timer_message.embeds = embeds
+
         await self.queue_message(self.timer_message, timer_message, clear_messages=lambda message: True)
 
     @asyncio.coroutine
