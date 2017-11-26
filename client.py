@@ -212,7 +212,7 @@ class RelayClient(BaseClient):
             status_message.content = "@everyone {0} has spawned".format(boss_name)
 
         if boss_name:
-            await self.queue_message(self.status_message, status_message, update_existing=existing_check)
+            await self.queue_message(self.status_message, status_message, clear_messages=existing_check, update_existing=existing_check)
             return
 
         boss_name = re.search(r'({})?=(all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
