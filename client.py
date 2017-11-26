@@ -3,6 +3,7 @@ import discord
 import json
 import logging
 import os
+import re
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
 
@@ -102,6 +103,8 @@ class RelayClient(BaseClient):
     def __init__(self, *args, **kwargs):
         super(RelayClient, self).__init__(*args, **kwargs)
 
+        self.boss_updates_cache = {name: None for name in self.config['BDOBossDiscord']['BossNameMapping'].keys()}
+
     @asyncio.coroutine
     def on_ready(self):
         yield from super(RelayClient, self).on_ready()
@@ -129,7 +132,7 @@ class RelayClient(BaseClient):
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
-    def queue_message(self, delayed_obj, new_message, clear_messages=None):
+    def queue_message(self, delayed_obj, new_message, clear_messages=None, update_existing=None):
         with (yield from delayed_obj.lock):
             initiate_send = not delayed_obj.is_sending
 
@@ -153,15 +156,29 @@ class RelayClient(BaseClient):
         with (yield from delayed_obj.lock):
             logger.debug("Relaying embeds and message {0} to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
+                existing_message = None
+
                 if clear_messages:
                     yield from self.purge_from(channel, check=clear_messages)
+                if update_existing:
+                    logs = yield from self.logs_from(channel)
+                    for message in logs:
+                        if update_existing(message):
+                            existing_message = message
+                            break
 
                 if delayed_obj.embeds:
                     for embed in delayed_obj.embeds:
-                        yield from self.send_message(channel, delayed_obj.content, embed=embed)
+                        if existing_message:
+                            yield from self.send_message(channel, delayed_obj.content, embed=embed)
+                        else:
+                            yield from self.edit_message(existing_message, delayed_obj.content, embed=embed)
                         delayed_obj.content = None  # Send it with the first embed
                 elif delayed_obj.content:
-                    yield from self.send_message(channel, delayed_obj.content)
+                    if existing_message:
+                        yield from self.send_message(channel, delayed_obj.content)
+                    else:
+                        yield from self.edit_message(existing_message, delayed_obj.content)
 
             delayed_obj.content = None
             delayed_obj.embeds = None
@@ -179,15 +196,27 @@ class RelayClient(BaseClient):
 
     @asyncio.coroutine
     def on_boss_status_update(self, status_message):
-        logger.debug("Relay received Boss Update Message {0}".format(status_message.content))
+        logger.debug("Relay received Boss Update Message < {0} >".format(status_message.content))
         boss_name = None
+        boss_mapping = self.config['BDOBossDiscord']['BossNameMapping']
+        existing_check = lambda message: re.search(boss_name, message.content, re.I)
 
         if status_message.attachments:
             boss_name = status_message.attachments[0].get('filename', '').split('.', maxsplit=1)[0].lower()
         if boss_name:
             # Update message content
-            status_message.content = "@everyone {0} has spawned".format(boss_name)
+            status_message.content = "@everyone {0} has spawned".format(boss_mapping[boss_name])
 
-        delete_check = lambda message: boss_name in message.content
+        if boss_name:
+            yield from self.queue_message(self.status_message, status_message, update_existing=existing_check)
+            return
 
-        yield from self.queue_message(self.status_message, status_message, clear_messages=delete_check)
+        boss_name = re.search(r'({})?=(all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
+
+        if boss_name:
+            # All clear message
+            for channel in self.status_message.channels:
+                yield from self.purge_from(channel, check=existing_check)
+                return
+
+        logger.error("Unhandled message: id: {} content: {}".format(status_message.id, status_message.content))
