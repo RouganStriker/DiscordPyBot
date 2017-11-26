@@ -150,10 +150,11 @@ class RelayClient(BaseClient):
 
         with (yield from delayed_obj.lock):
             for channel in delayed_obj.channels:
-                yield from self.send_message(channel, content=delayed_obj.content)
-
-                for embed in delayed_obj.embeds:
-                    yield from self.send_message(channel, embed=embed)
+                if delayed_obj.content:
+                    yield from self.send_message(channel, content=delayed_obj.content)
+                if delayed_obj.embeds:
+                    for embed in delayed_obj.embeds:
+                        yield from self.send_message(channel, embed=embed)
 
             delayed_obj.content = None
             delayed_obj.embeds = None
