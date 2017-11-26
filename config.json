@@ -21,5 +21,8 @@
   },
   "customStrings": {
     "autoReply": "Hi I am a bot. For questions or enquires, please message @rouganstriker#5241."
-  }
+  },
+  "timerChannelName": "boss_timer",
+  "notificationChannelName": "boss_callouts",
+  "statusUpdateChannelName": "boss_callouts"
 }
