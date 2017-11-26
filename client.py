@@ -207,7 +207,8 @@ class RelayClient(BaseClient):
             boss_name = status_message.attachments[0].get('filename', '').split('.', maxsplit=1)[0].lower()
         if boss_name:
             # Update message content
-            status_message.content = "@everyone {0} has spawned".format(boss_mapping[boss_name])
+            boss_name = boss_mapping[boss_name]
+            status_message.content = "@everyone {0} has spawned".format(boss_name)
 
         if boss_name:
             await self.queue_message(self.status_message, status_message, update_existing=existing_check)
