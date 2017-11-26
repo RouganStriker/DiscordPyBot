@@ -173,13 +173,14 @@ class RelayClient(BaseClient):
 
                 if delayed_obj.embeds:
                     for embed in delayed_obj.embeds:
-                        if not existing_message:
+                        logger.debug("Relaying embed...")
+                        if existing_message is None:
                             await self.send_message(channel, delayed_obj.content, embed=embed)
                         else:
                             await self.edit_message(existing_message, delayed_obj.content, embed=embed)
                         delayed_obj.content = None  # Send it with the first embed
                 elif delayed_obj.content:
-                    if not existing_message:
+                    if existing_message is None:
                         await self.send_message(channel, delayed_obj.content)
                     else:
                         await self.edit_message(existing_message, delayed_obj.content)
