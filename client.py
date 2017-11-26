@@ -136,6 +136,9 @@ class RelayClient(BaseClient):
 
     @asyncio.coroutine
     async def queue_message(self, delayed_obj, new_message, clear_messages=None, update_existing=None):
+        if delayed_obj.lock.locked():
+            return
+
         with (await delayed_obj.lock):
             initiate_send = not delayed_obj.is_sending
 
@@ -152,22 +155,20 @@ class RelayClient(BaseClient):
                     embeds.append(new_embed)
                 delayed_obj.embeds = embeds
 
-        # Re-acquire lock to allow message to be updated
-        if not initiate_send:
-            return
-
-        with (await delayed_obj.lock):
             logger.debug("Relaying embeds and message {0} to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
                 existing_message = None
 
-                if clear_messages:
-                    await self.purge_from(channel, check=clear_messages)
                 if update_existing:
                     async for message in self.logs_from(channel):
                         if update_existing(message):
                             existing_message = message
+                            logger.debug("Found existing message with id {}".format(message.id))
                             break
+                if clear_messages:
+                    def _delete_check(message):
+                        return message != existing_message and clear_messages(message)
+                    await self.purge_from(channel, check=_delete_check)
 
                 if delayed_obj.embeds:
                     for embed in delayed_obj.embeds:
