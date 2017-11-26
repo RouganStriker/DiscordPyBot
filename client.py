@@ -10,14 +10,18 @@ CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.handlers.TimedRotatingFileHandler(filename='discord.log', when='midnight', encoding='utf-8', mode='w', backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 
 logger.addHandler(handler)
 
 logger = logging.getLogger('relay')
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
+handler = logging.handlers.TimedRotatingFileHandler(filename='bot.log', when='midnight', encoding='utf-8', mode='w', backupCount=1)
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 class BaseClient(discord.Client):
@@ -133,7 +137,7 @@ class RelayClient(BaseClient, commands.Bot):
         logger.debug("Found {} notification channels".format(len(notification_channels)))
 
         self.timer_message = DelayedMessage(self.timer_channels)
-        self.status_messages = {boss: DelayedMessage(self.status_channels) for boss in self.config['BDOBossDiscord']['BossNameMapping'].keys()}
+        self.status_messages = {boss: DelayedMessage(self.status_channels) for boss in self.config['BDOBossDiscord']['BossNameMapping'].values()}
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
