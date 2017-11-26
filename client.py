@@ -7,10 +7,15 @@ import os
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
 
 logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+
 logger.addHandler(handler)
+
+logger = logging.getLogger('relay')
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 
 class BaseClient(discord.Client):
@@ -75,11 +80,11 @@ class ListenerClient(BaseClient):
 
         if message.channel.id == self.config['BDOBossDiscord']['TimerChannelID']:
             # Timer Channel Update
-            self.relay_client.on_boss_timer_update(message)
+            yield from self.relay_client.on_boss_timer_update(message)
         elif message.channel.id == self.config['BDOBossDiscord']['NotificationChannelID']:
-            self.relay_client.on_boss_notification_update(message)
+            yield from self.relay_client.on_boss_notification_update(message)
         elif message.channel.id in self.config['BDOBossDiscord']['StatusChannelIDs']:
-            self.relay_client.on_boss_status_update(message)
+            yield from self.relay_client.on_boss_status_update(message)
 
 
 class MessageAggregator(object):
@@ -92,7 +97,10 @@ class MessageAggregator(object):
         self.client = client
         self.channels = channels
 
+    @asyncio.coroutine
     def send_message(self, content=None, embed=None):
+        logger.debug("Sending message {}".format(content))
+
         if content is None and embed is None:
             return
 
@@ -148,14 +156,17 @@ class RelayClient(BaseClient):
         self.status_message = MessageAggregator(self, status_channels)
         self.notification_message = MessageAggregator(self, notification_channels)
 
+    @asyncio.coroutine
     def on_boss_timer_update(self, timer_message):
         logger.debug("Relay received Boss Timer Message {0}".format(timer_message.content))
         self.timer_message.send_message(timer_message.content, timer_message.embeds)
 
+    @asyncio.coroutine
     def on_boss_notification_update(self, notification_message):
         logger.debug("Relay received Boss Notification Message {0}".format(notification_message.content))
         self.notification_message.send_message(notification_message.content, notification_message.embeds)
 
+    @asyncio.coroutine
     def on_boss_status_update(self, status_message):
         logger.debug("Relay received Boss Update Message {0}".format(status_message.content))
         self.status_message.send_message(status_message.content, status_message.embeds)
