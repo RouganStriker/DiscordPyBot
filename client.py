@@ -39,6 +39,8 @@ class ListenerClient(BaseClient):
 
     @asyncio.coroutine
     def on_ready(self):
+        yield from super(ListenerClient, self).on_ready()
+
         bdo_config = self.config['BDOBossDiscord']
         self.tracker_guild = self.get_server(bdo_config['GuildID'])
         self.timer_channel = self.tracker_guild.get_channel(bdo_config['TimerChannelID'])
@@ -49,8 +51,6 @@ class ListenerClient(BaseClient):
 
         for channel_id in bdo_config['StatusChannelIDs']:
             assert self.tracker_guild.get_channel(channel_id) is not None, "Invalid channel id {0} in StatusChannelIDs".format(channel_id)
-
-        yield from super(ListenerClient, self).on_ready()
 
     @asyncio.coroutine
     def on_message(self, message):
@@ -115,14 +115,16 @@ class MessageAggregator(object):
 
 
 class RelayClient(BaseClient):
-    def __init__(self, *args, **kwargs):
-        super(RelayClient, self).__init__(*args, **kwargs)
+    @asyncio.coroutine
+    def on_ready(self):
+        yield from super(RelayClient, self).on_ready()
 
         timer_channels = []
         status_channels = []
         notification_channels = []
 
         for channel in self.get_all_channels():
+            print(channel.name)
             if channel.is_private:
                 continue
             if channel.name.lower() == self.config['timerChannelName'].lower():
