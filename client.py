@@ -114,26 +114,26 @@ class RelayClient(BaseClient, commands.Bot):
     async def on_ready(self):
         await super(RelayClient, self).on_ready()
 
-        timer_channels = []
-        status_channels = []
+        self.timer_channels = []
+        self.status_channels = []
         notification_channels = []
 
         for channel in self.get_all_channels():
             if channel.is_private:
                 continue
             if channel.name.lower() == self.config['timerChannelName'].lower():
-                timer_channels.append(channel)
+                self.timer_channels.append(channel)
             if channel.name.lower() == self.config['notificationChannelName'].lower():
                 notification_channels.append(channel)
             if channel.name.lower() == self.config['statusUpdateChannelName'].lower():
-                status_channels.append(channel)
+                self.status_channels.append(channel)
 
-        logger.debug("Found {} timer channels".format(len(timer_channels)))
-        logger.debug("Found {} status update channels".format(len(status_channels)))
+        logger.debug("Found {} timer channels".format(len(self.timer_channels)))
+        logger.debug("Found {} status update channels".format(len(self.status_channels)))
         logger.debug("Found {} notification channels".format(len(notification_channels)))
 
-        self.timer_message = DelayedMessage(timer_channels)
-        self.status_message = DelayedMessage(status_channels)
+        self.timer_message = DelayedMessage(self.timer_channels)
+        self.status_message = DelayedMessage(self.status_channels)
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
@@ -242,3 +242,17 @@ class RelayClient(BaseClient, commands.Bot):
                 return
 
         logger.error("Unhandled message: id: {} content: {}".format(status_message.id, status_message.content))
+
+
+class RelayCommands(object):
+    def __init__(self, listener, bot):
+        self.listener = listener
+        self.bot = bot
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def refreshBossTimer(self):
+        pass
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def refreshBossCallouts(self):
+        pass
