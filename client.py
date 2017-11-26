@@ -155,7 +155,7 @@ class RelayClient(BaseClient):
                     embeds.append(new_embed)
                 delayed_obj.embeds = embeds
 
-            logger.debug("Relaying embeds and message {0} to all channels".format(new_message.content))
+            logger.debug("Relaying embeds and message < {0} > to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
                 existing_message = None
 
@@ -216,7 +216,7 @@ class RelayClient(BaseClient):
             await self.queue_message(self.status_message, status_message, clear_messages=existing_check, update_existing=existing_check)
             return
 
-        boss_name = re.search(r'({})?=(all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
+        boss_name = re.search(r'({})(?= > all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
 
         if boss_name:
             # All clear message
