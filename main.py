@@ -9,7 +9,7 @@ relayClient = RelayClient()
 listenerClient = ListenerClient(relayClient)
 relayClient.add_cog(RelayCommands(listenerClient, relayClient))
 
-if os.environ.get('RELAY_DEV_MODE', False):
+if os.environ.get('RELAY_DEV_MODE', 'False') == 'False':
     RELAY_TOKEN_VAR = 'DISCORD_DEV_BOT_TOKEN'
 else:
     RELAY_TOKEN_VAR = 'DISCORD_BOT_TOKEN'
