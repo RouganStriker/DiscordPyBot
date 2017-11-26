@@ -249,10 +249,32 @@ class RelayCommands(object):
         self.listener = listener
         self.bot = bot
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def refreshBossTimer(self):
-        pass
+        # Import config
+        with open(CONFIG_FILE) as f:
+            self.config = json.load(f)
 
     @commands.command(pass_context=True, no_pm=True)
-    async def refreshBossCallouts(self):
-        pass
+    async def refreshBossTimer(self, ctx):
+        await self.bot.say("Refreshed boss timer")
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def clearBossCallouts(self, ctx):
+        counter = 0
+        callout_channel = discord.utils.get(ctx.message.server.channels, name=self.config['statusUpdateChannelName'])
+
+        if not callout_channel:
+            await self.bot.say("@{0} no {1} channel found".format(ctx.message.author.username, self.config['statusUpdateChannelName']))
+            return
+
+        while True:
+            logs = await self.bot.logs_from(callout_channel)
+
+            if len(logs) == 0:
+                break
+            for message in logs:
+                await self.bot.delete_message(message)
+                counter += 1
+
+        logger.debug("Delete {0} messages".format(counter))
+
+        await self.bot.say("Cleared boss call outs")

@@ -2,11 +2,12 @@ import asyncio
 from collections import namedtuple
 import os
 
-from client import ListenerClient, RelayClient
+from client import ListenerClient, RelayClient, RelayCommands
 
 
 relayClient = RelayClient()
 listenerClient = ListenerClient(relayClient)
+relayClient.add_cog(RelayCommands(listenerClient, relayClient))
 
 if os.environ.get('RELAY_DEV_MODE', False):
     RELAY_TOKEN_VAR = 'DISCORD_DEV_BOT_TOKEN'
