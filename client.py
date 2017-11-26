@@ -11,14 +11,14 @@ CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
-handler = logging.handlers.TimedRotatingFileHandler(filename='discord.log', when='midnight', encoding='utf-8', mode='w', backupCount=1)
+handler = logging.handlers.TimedRotatingFileHandler(filename='discord.log', when='midnight', encoding='utf-8', backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 
 logger.addHandler(handler)
 
 logger = logging.getLogger('relay')
 logger.addHandler(logging.StreamHandler())
-handler = TimedRotatingFileHandler(filename='bot.log', when='midnight', encoding='utf-8', mode='w', backupCount=1)
+handler = TimedRotatingFileHandler(filename='bot.log', when='midnight', encoding='utf-8', backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
