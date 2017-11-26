@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import json
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import os
 import re
 
@@ -17,7 +18,7 @@ logger.addHandler(handler)
 
 logger = logging.getLogger('relay')
 logger.addHandler(logging.StreamHandler())
-handler = logging.handlers.TimedRotatingFileHandler(filename='bot.log', when='midnight', encoding='utf-8', mode='w', backupCount=1)
+handler = TimedRotatingFileHandler(filename='bot.log', when='midnight', encoding='utf-8', mode='w', backupCount=1)
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
