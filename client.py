@@ -266,14 +266,14 @@ class RelayCommands(object):
             await self.bot.say("@{0} no {1} channel found".format(ctx.message.author.username, self.config['statusUpdateChannelName']))
             return
 
-        while True:
-            logs = await self.bot.logs_from(callout_channel)
+        loop = True
+        while loop:
+            loop = False
 
-            if len(logs) == 0:
-                break
-            for message in logs:
+            async for message in self.bot.logs_from(callout_channel):
                 await self.bot.delete_message(message)
                 counter += 1
+                loop = True
 
         logger.debug("Delete {0} messages".format(counter))
 
