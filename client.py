@@ -31,7 +31,7 @@ class BaseClient(discord.Client):
             self.config = json.load(f)
 
     @asyncio.coroutine
-    def on_ready(self):
+    async def on_ready(self):
         logger.info('{0}: Logged in as {1}'.format(self, self.user.name))
 
 
@@ -52,8 +52,8 @@ class ListenerClient(BaseClient):
         bdo_config['BotIDs'] = [str(bot_id) for bot_id in bdo_config['BotIDs']]
 
     @asyncio.coroutine
-    def on_ready(self):
-        yield from super(ListenerClient, self).on_ready()
+    async def on_ready(self):
+        await super(ListenerClient, self).on_ready()
 
         bdo_config = self.config['BDOBossDiscord']
         self.tracker_guild = self.get_server(bdo_config['GuildID'])
@@ -67,26 +67,29 @@ class ListenerClient(BaseClient):
             assert self.tracker_guild.get_channel(channel_id) is not None, "Invalid channel id {0} in StatusChannelIDs".format(channel_id)
 
     @asyncio.coroutine
-    def on_message(self, message):
+    async def on_message(self, message):
         if message.author.id == self.user.id:
             # Ignore own messages
             return
         if message.server is None and message.channel.is_private and not message.author.bot:
             # This a PM from another User
-            yield from self.send_message(message.channel, content=self.config['customStrings']['autoReply'])
+            await self.send_message(message.channel, content=self.config['customStrings']['autoReply'])
             return
-        if (message.server.id != self.config['BDOBossDiscord']['GuildID'] or
-            message.author.id not in self.config['BDOBossDiscord']['BotIDs']):
+
+        from_boss_discord = message.server.id == self.config['BDOBossDiscord']['GuildID']
+        from_bot = message.author.id in self.config['BDOBossDiscord']['BotIDs']
+
+        if not from_boss_discord or not from_bot:
             # Exit early if the message is not from the boss discord or not send by the bot user
             return
 
         if message.channel.id == self.config['BDOBossDiscord']['TimerChannelID']:
             # Timer Channel Update
-            yield from self.relay_client.on_boss_timer_update(message)
+            await self.relay_client.on_boss_timer_update(message)
         elif message.channel.id == self.config['BDOBossDiscord']['NotificationChannelID']:
-            yield from self.relay_client.on_boss_notification_update(message)
+            await self.relay_client.on_boss_notification_update(message)
         elif message.channel.id in self.config['BDOBossDiscord']['StatusChannelIDs']:
-            yield from self.relay_client.on_boss_status_update(message)
+            await self.relay_client.on_boss_status_update(message)
 
 
 class DelayedMessage(object):
@@ -106,8 +109,8 @@ class RelayClient(BaseClient):
         self.boss_updates_cache = {name: None for name in self.config['BDOBossDiscord']['BossNameMapping'].keys()}
 
     @asyncio.coroutine
-    def on_ready(self):
-        yield from super(RelayClient, self).on_ready()
+    async def on_ready(self):
+        await super(RelayClient, self).on_ready()
 
         timer_channels = []
         status_channels = []
@@ -132,8 +135,8 @@ class RelayClient(BaseClient):
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
-    def queue_message(self, delayed_obj, new_message, clear_messages=None, update_existing=None):
-        with (yield from delayed_obj.lock):
+    async def queue_message(self, delayed_obj, new_message, clear_messages=None, update_existing=None):
+        with (await delayed_obj.lock):
             initiate_send = not delayed_obj.is_sending
 
             if initiate_send:
@@ -153,13 +156,13 @@ class RelayClient(BaseClient):
         if not initiate_send:
             return
 
-        with (yield from delayed_obj.lock):
+        with (await delayed_obj.lock):
             logger.debug("Relaying embeds and message {0} to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
                 existing_message = None
 
                 if clear_messages:
-                    yield from self.purge_from(channel, check=clear_messages)
+                    await self.purge_from(channel, check=clear_messages)
                 if update_existing:
                     async for message in self.logs_from(channel):
                         if update_existing(message):
@@ -169,32 +172,32 @@ class RelayClient(BaseClient):
                 if delayed_obj.embeds:
                     for embed in delayed_obj.embeds:
                         if existing_message:
-                            yield from self.send_message(channel, delayed_obj.content, embed=embed)
+                            await self.send_message(channel, delayed_obj.content, embed=embed)
                         else:
-                            yield from self.edit_message(existing_message, delayed_obj.content, embed=embed)
+                            await self.edit_message(existing_message, delayed_obj.content, embed=embed)
                         delayed_obj.content = None  # Send it with the first embed
                 elif delayed_obj.content:
                     if existing_message:
-                        yield from self.send_message(channel, delayed_obj.content)
+                        await self.send_message(channel, delayed_obj.content)
                     else:
-                        yield from self.edit_message(existing_message, delayed_obj.content)
+                        await self.edit_message(existing_message, delayed_obj.content)
 
             delayed_obj.content = None
             delayed_obj.embeds = None
             delayed_obj.is_sending = False
 
     @asyncio.coroutine
-    def on_boss_timer_update(self, timer_message):
+    async def on_boss_timer_update(self, timer_message):
         logger.debug("Relay received Boss Timer Message {0}".format(timer_message.content))
-        yield from self.queue_message(self.timer_message, timer_message, clear_messages=lambda message: True)
+        await self.queue_message(self.timer_message, timer_message, clear_messages=lambda message: True)
 
     @asyncio.coroutine
-    def on_boss_notification_update(self, notification_message):
+    async def on_boss_notification_update(self, notification_message):
         # We use boss status for notification and mentioning
         pass
 
     @asyncio.coroutine
-    def on_boss_status_update(self, status_message):
+    async def on_boss_status_update(self, status_message):
         logger.debug("Relay received Boss Update Message < {0} >".format(status_message.content))
         boss_name = None
         boss_mapping = self.config['BDOBossDiscord']['BossNameMapping']
@@ -207,7 +210,7 @@ class RelayClient(BaseClient):
             status_message.content = "@everyone {0} has spawned".format(boss_mapping[boss_name])
 
         if boss_name:
-            yield from self.queue_message(self.status_message, status_message, update_existing=existing_check)
+            await self.queue_message(self.status_message, status_message, update_existing=existing_check)
             return
 
         boss_name = re.search(r'({})?=(all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
@@ -215,7 +218,7 @@ class RelayClient(BaseClient):
         if boss_name:
             # All clear message
             for channel in self.status_message.channels:
-                yield from self.purge_from(channel, check=existing_check)
+                await self.purge_from(channel, check=existing_check)
                 return
 
         logger.error("Unhandled message: id: {} content: {}".format(status_message.id, status_message.content))
