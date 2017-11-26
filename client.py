@@ -41,12 +41,12 @@ class ListenerClient(BaseClient):
         self.tracker_guild = self.get_server(bdo_config['GuildID'])
         self.timer_channel = self.tracker_guild.get_channel(bdo_config['TimerChannelID'])
 
-        assert(self.tracker_guild, "Invalid GuildID in config")
-        assert(self.timer_channel, "Invalid TimerChannelID")
-        assert(self.tracker_guild.get_channel(bdo_config['NotificationChannelID']), "Invalid NotificationChannelID")
+        assert(self.tracker_guild is not None, "Invalid GuildID in config")
+        assert(self.timer_channel is not None, "Invalid TimerChannelID")
+        assert(self.tracker_guild.get_channel(bdo_config['NotificationChannelID']) is not None, "Invalid NotificationChannelID")
 
         for channel_id in bdo_config['StatusChannelIDs']:
-            assert(self.tracker_guild.get_channel(channel_id, "Invalid channel id {0} in StatusChannelIDs".format(channel_id)))
+            assert(self.tracker_guild.get_channel(channel_id) is not None, "Invalid channel id {0} in StatusChannelIDs".format(channel_id))
 
     @asyncio.coroutine
     def on_message(self, message):
