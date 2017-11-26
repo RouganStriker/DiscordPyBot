@@ -87,32 +87,60 @@ class ListenerClient(BaseClient):
             yield from self.relay_client.on_boss_status_update(message)
 
 
-class MessageAggregator(object):
+class DelayedMessage(object):
     lock = asyncio.Lock()
-    content = None
-    embed = None
     is_sending = False
+    content = None
+    embeds = None
 
-    def __init__(self, client, channels):
-        self.client = client
+    def __init__(self, channels):
         self.channels = channels
 
-    @asyncio.coroutine
-    def send_message(self, content=None, embed=None):
-        logger.debug("Sending message {}".format(content))
 
-        if content is None and embed is None:
+class RelayClient(BaseClient):
+    def __init__(self, *args, **kwargs):
+        super(RelayClient, self).__init__(*args, **kwargs)
+
+    @asyncio.coroutine
+    def on_ready(self):
+        yield from super(RelayClient, self).on_ready()
+
+        timer_channels = []
+        status_channels = []
+        notification_channels = []
+
+        for channel in self.get_all_channels():
+            if channel.is_private:
+                continue
+            if channel.name.lower() == self.config['timerChannelName'].lower():
+                timer_channels.append(channel)
+            if channel.name.lower() == self.config['notificationChannelName'].lower():
+                notification_channels.append(channel)
+            if channel.name.lower() == self.config['statusUpdateChannelName'].lower():
+                status_channels.append(channel)
+
+        logger.debug("Found {} timer channels".format(len(timer_channels)))
+        logger.debug("Found {} status update channels".format(len(status_channels)))
+        logger.debug("Found {} notification channels".format(len(notification_channels)))
+
+        self.timer_message = DelayedMessage(timer_channels)
+        self.status_message = DelayedMessage(status_channels)
+        self.notification_message = DelayedMessage(notification_channels)
+
+    @asyncio.coroutine
+    def queue_message(self, delayed_obj, new_content=None, new_embeds=None):
+        if new_content is None and new_embeds is None:
             return
 
-        with (yield from self.lock):
-            initiate_send = not self.is_sending
+        with (yield from delayed_obj.lock):
+            initiate_send = not delayed_obj.is_sending
 
             if initiate_send:
-                self.is_sending = True
-            if content:
-                self.content = content
-            if embed:
-                self.embed = embed
+                delayed_obj.is_sending = True
+            if new_content:
+                delayed_obj.content = new_content
+            if new_embeds:
+                delayed_obj.embeds = new_embeds
 
         # Re-acquire lock to allow message to be updated
         if not initiate_send:
@@ -120,75 +148,25 @@ class MessageAggregator(object):
 
         logger.debug("Initiating send")
 
-        with (yield from self.lock):
-            for channel in self.channels:
-                yield from self.client.send_message(channel, content=self.content, embed=self.embed)
+        with (yield from delayed_obj.lock):
+            for channel in delayed_obj.channels:
+                yield from self.send_message(channel, content=delayed_obj.content, delayed_obj=self.embed)
 
-            self.content = None
-            self.embed = None
-            self.is_sending = False
-
-
-class RelayClient(BaseClient):
-    def __init__(self, *args, **kwargs):
-        super(RelayClient, self).__init__(*args, **kwargs)
-
-        self.timer_lock = asyncio.Lock()
-        self.timer_posting = False
-        self.timer_message = None
-        self.notification_lock = asyncio.Lock()
-        self.status_lock = asyncio.Lock()
-
-    @asyncio.coroutine
-    def on_ready(self):
-        yield from super(RelayClient, self).on_ready()
-
-        self.timer_channels = []
-        self.status_channels = []
-        self.notification_channels = []
-
-        for channel in self.get_all_channels():
-            if channel.is_private:
-                continue
-            if channel.name.lower() == self.config['timerChannelName'].lower():
-                self.timer_channels.append(channel)
-            if channel.name.lower() == self.config['notificationChannelName'].lower():
-                self.notification_channels.append(channel)
-            if channel.name.lower() == self.config['statusUpdateChannelName'].lower():
-                self.status_channels.append(channel)
-
-        logger.debug("Found {} timer channels".format(len(self.timer_channels)))
-        logger.debug("Found {} status update channels".format(len(self.status_channels)))
-        logger.debug("Found {} notification channels".format(len(self.notification_channels)))
-
-        # self.timer_message = MessageAggregator(self, timer_channels)
-        # self.status_message = MessageAggregator(self, status_channels)
-        # self.notification_message = MessageAggregator(self, notification_channels)
+            delayed_obj.content = None
+            delayed_obj.embeds = None
+            delayed_obj.is_sending = False
 
     @asyncio.coroutine
     def on_boss_timer_update(self, timer_message):
         logger.debug("Relay received Boss Timer Message {0}".format(timer_message.content))
-
-        with (yield from self.timer_lock):
-            send = not self.timer_posting
-
-            if not self.timer_posting:
-                self.timer_posting = True
-            self.timer_message = timer_message.content
-
-        if not send:
-            return
-
-        with (yield from self.timer_lock):
-            for channel in self.timer_channels:
-                yield from self.send_message(channel, self.timer_message)
+        yield from self.queue_message(self.timer_message, timer_message.content, timer_message.embeds)
 
     @asyncio.coroutine
     def on_boss_notification_update(self, notification_message):
         logger.debug("Relay received Boss Notification Message {0}".format(notification_message.content))
-        self.notification_message.send_message(notification_message.content, notification_message.embeds)
+        yield from self.queue_message(self.notification_message, notification_message.content, notification_message.embeds)
 
     @asyncio.coroutine
     def on_boss_status_update(self, status_message):
         logger.debug("Relay received Boss Update Message {0}".format(status_message.content))
-        self.status_message.send_message(status_message.content, status_message.embeds)
+        yield from self.queue_message(self.status_message, status_message.content, status_message.embeds)
