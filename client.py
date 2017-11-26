@@ -23,7 +23,7 @@ class ListenerClient(BaseClient):
 
         # Import config
         with open(CONFIG_FILE) as f:
-            self.config = json.loads(f)
+            self.config = json.load(f)
 
         # Ensure the IDs are strings
         bdo_config = self.config['BDOBossDiscord']
