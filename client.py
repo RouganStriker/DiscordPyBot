@@ -146,14 +146,8 @@ class RelayClient(BaseClient):
                 delayed_obj.is_sending = True
             if new_message.content:
                 delayed_obj.content = new_message.content
-            if new_message.attachments:
-                embeds = []
-                for attachment in new_message.attachments:
-                    new_embed = discord.Embed()
-                    new_embed.set_image(url=attachment['url'])
-                    new_embed.set_author(name=new_message.author.display_name, icon_url=new_message.author.avatar_url)
-                    embeds.append(new_embed)
-                delayed_obj.embeds = embeds
+            if new_message.embeds:
+                delayed_obj.embeds = new_message.embeds
 
             logger.debug("Relaying embeds and message < {0} > to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
@@ -216,6 +210,14 @@ class RelayClient(BaseClient):
             status_message.content = "@everyone {0} has spawned".format(boss_name)
 
         if boss_name:
+            embeds = []
+            for attachment in status_message.attachments:
+                new_embed = discord.Embed()
+                new_embed.set_image(url=attachment['url'])
+                new_embed.set_author(name=status_message.author.display_name, icon_url=status_message.author.avatar_url)
+                embeds.append(new_embed)
+            status_message.embeds = embeds
+
             await self.queue_message(self.status_message, status_message, clear_messages=existing_check, update_existing=existing_check)
             return
 
