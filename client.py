@@ -165,10 +165,12 @@ class RelayClient(BaseClient):
                             existing_message = message
                             logger.debug("Found existing message with id {}".format(message.id))
                             break
-                logger.debug("Updating exisitng {0}".format(existing_message))
                 if clear_messages:
+                    logger.debug("Checking for messages to clear...")
+
                     def _delete_check(message):
                         return (not existing_message or message.id != existing_message.id) and clear_messages(message)
+
                     await self.purge_from(channel, check=_delete_check)
 
                 if delayed_obj.embeds:
