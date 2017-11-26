@@ -128,27 +128,29 @@ class RelayClient(BaseClient):
         self.notification_message = DelayedMessage(notification_channels)
 
     @asyncio.coroutine
-    def queue_message(self, delayed_obj, new_content=None, new_embeds=None):
-        if new_content is None and new_embeds is None:
-            return
-
+    def queue_message(self, delayed_obj, new_message):
         with (yield from delayed_obj.lock):
             initiate_send = not delayed_obj.is_sending
 
             if initiate_send:
                 delayed_obj.is_sending = True
-            if new_content:
-                delayed_obj.content = new_content
-            if new_embeds:
-                delayed_obj.embeds = new_embeds
+            if new_message.content:
+                delayed_obj.content = new_message.content
+            if new_message.attachments:
+                embeds = []
+                for attachment in new_message.attachments:
+                    new_embed = discord.Embed()
+                    new_embed.set_image(attachment.url)
+                    new_embed.set_author(new_message.author.display_name, icon_url=new_message.author.avatar_url)
+                    embeds.append(new_embed)
+                delayed_obj.embeds = embeds
 
         # Re-acquire lock to allow message to be updated
         if not initiate_send:
             return
 
-        logger.debug("Initiating send")
-
         with (yield from delayed_obj.lock):
+            logger.debug("Relaying embeds and message {0} to all channels".format(new_message.content))
             for channel in delayed_obj.channels:
                 if delayed_obj.content:
                     yield from self.send_message(channel, content=delayed_obj.content)
@@ -163,14 +165,14 @@ class RelayClient(BaseClient):
     @asyncio.coroutine
     def on_boss_timer_update(self, timer_message):
         logger.debug("Relay received Boss Timer Message {0}".format(timer_message.content))
-        yield from self.queue_message(self.timer_message, timer_message.content, timer_message.embeds)
+        yield from self.queue_message(self.timer_message, timer_message)
 
     @asyncio.coroutine
     def on_boss_notification_update(self, notification_message):
         logger.debug("Relay received Boss Notification Message {0}".format(notification_message.content))
-        yield from self.queue_message(self.notification_message, notification_message.content, notification_message.embeds)
+        yield from self.queue_message(self.notification_message, notification_message)
 
     @asyncio.coroutine
     def on_boss_status_update(self, status_message):
         logger.debug("Relay received Boss Update Message {0}".format(status_message.content))
-        yield from self.queue_message(self.status_message, status_message.content, status_message.embeds)
+        yield from self.queue_message(self.status_message, status_message)
