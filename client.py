@@ -42,7 +42,7 @@ class ListenerClient(BaseClient):
 
         # Ensure the IDs are strings
         bdo_config = self.config['BDOBossDiscord']
-        id_fields = ['GuildID', 'TimerChannelID', 'NotificationChannelID', 'BotID']
+        id_fields = ['GuildID', 'TimerChannelID', 'NotificationChannelID']
 
         for field in id_fields:
             bdo_config[field] = str(bdo_config[field])
