@@ -217,13 +217,13 @@ class RelayClient(BaseClient, commands.Bot):
         logger.debug("Relay received Boss Update Message < {0} >".format(status_message.content))
         boss_name = None
         boss_mapping = self.config['BDOBossDiscord']['BossNameMapping']
-        existing_check = lambda message: re.search(boss_name, message.content, re.I)
 
         if status_message.attachments:
             boss_name = status_message.attachments[0].get('filename', '').split('.', maxsplit=1)[0].lower()
         if boss_name:
             # Update message content
             boss_name = boss_mapping[boss_name]
+            existing_check = lambda message: re.search(boss_name, message.content, re.I)
             status_message.content = "@everyone {0} has spawned".format(boss_name)
 
         if boss_name:
@@ -242,6 +242,8 @@ class RelayClient(BaseClient, commands.Bot):
 
         if boss_name:
             # All clear message
+            existing_check = lambda message: re.search(boss_name, message.content, re.I)
+
             for channel in self.status_channels:
                 await self.purge_from(channel, check=existing_check)
                 return
