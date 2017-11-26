@@ -50,7 +50,7 @@ class ListenerClient(BaseClient):
         for channel_id in bdo_config['StatusChannelIDs']:
             assert self.tracker_guild.get_channel(channel_id) is not None, "Invalid channel id {0} in StatusChannelIDs".format(channel_id)
 
-        super(ListenerClient, self).on_ready()
+        yield from super(ListenerClient, self).on_ready()
 
     @asyncio.coroutine
     def on_message(self, message):
@@ -103,6 +103,8 @@ class MessageAggregator(object):
         if not initiate_send:
             return
 
+        print("Initiating send")
+
         with (yield from self.lock):
             for channel in self.channels:
                 yield from self.client.send_message(channel, content=self.content, embed=self.embed)
@@ -129,6 +131,10 @@ class RelayClient(BaseClient):
                 notification_channels.append(channel)
             if channel.name.lower() == self.config['statusUpdateChannelName'].lower():
                 status_channels.append(channel)
+
+        print("Found", len(timer_channels), "timer channels")
+        print("Found", len(status_channels), "status update channels")
+        print("Found", len(notification_channels), "notification channels")
 
         self.timer_message = MessageAggregator(self, timer_channels)
         self.status_message = MessageAggregator(self, status_channels)

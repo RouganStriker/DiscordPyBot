@@ -51,8 +51,6 @@ loop.run_until_complete(login())
 for entry in entries:
     loop.create_task(wrapped_connect(entry))
 
-print("Start up complete")
-
 # now we're waiting for all the clients to close
 loop.run_until_complete(check_close())
 
