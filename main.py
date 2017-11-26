@@ -52,7 +52,7 @@ for entry in entries:
     loop.create_task(wrapped_connect(entry))
 
 # now we're waiting for all the clients to close
-loop.run_forever(check_close())
+loop.run_forever()
 
 # finally, we close the event loop
 loop.close()

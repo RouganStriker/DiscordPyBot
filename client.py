@@ -194,9 +194,9 @@ class RelayClient(BaseClient, commands.Bot):
         # Recreate embeds
         embeds = []
         for embed in timer_message.embeds:
-            discord.Embed(description=embed.get('description'),
-                          color=embed.get('color'),
-                          title=embed.get('title'))
+            embed = discord.Embed(description=embed.get('description'),
+                                  color=embed.get('color'),
+                                  title=embed.get('title'))
             embeds.append(embed)
         timer_message.embeds = embeds
 
