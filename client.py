@@ -167,7 +167,7 @@ class RelayClient(BaseClient):
                             break
                 if clear_messages:
                     def _delete_check(message):
-                        return message != existing_message and clear_messages(message)
+                        return message.id != existing_message.id and clear_messages(message)
                     await self.purge_from(channel, check=_delete_check)
 
                 if delayed_obj.embeds:
