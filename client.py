@@ -161,8 +161,7 @@ class RelayClient(BaseClient):
                 if clear_messages:
                     yield from self.purge_from(channel, check=clear_messages)
                 if update_existing:
-                    logs = yield from self.logs_from(channel)
-                    for message in logs:
+                    async for message in self.logs_from(channel):
                         if update_existing(message):
                             existing_message = message
                             break
