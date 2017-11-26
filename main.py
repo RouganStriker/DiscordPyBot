@@ -8,12 +8,10 @@ from client import ListenerClient, RelayClient
 relayClient = RelayClient()
 listenerClient = ListenerClient(relayClient)
 
-
 if os.environ.get('RELAY_DEV_MODE', False):
     RELAY_TOKEN_VAR = 'DISCORD_DEV_BOT_TOKEN'
 else:
     RELAY_TOKEN_VAR = 'DISCORD_BOT_TOKEN'
-
 
 # First, we must attach an event signalling when the bot has been
 # closed to the client itself so we know when to fully close the event loop.

@@ -1,0 +1,25 @@
+{
+  "BDOBossDiscord": {
+    "GuildID": 171908522269736969,
+    "TimerChannelID": 246364525438173184,
+    "StatusChannelIDs": [172146835656278016],
+    "NotificationChannelID": 171931874350989312,
+    "BotID": 249221836380962816,
+    "BossNameMapping": {
+      "kutum": "Kutum",
+      "karanda": "Karanda",
+      "kzarka": "Kzarka",
+      "bheg": "Bheg",
+      "mudster": "Giant Mudster",
+      "tree": "Dim Tree",
+      "rednose": "Red Nose",
+      "nouver": "Nouver",
+      "turkey": "Turkey",
+      "quint": "Quint",
+      "Muraka": "Muraka"
+    }
+  },
+  "customStrings": {
+    "autoReply": "Hi I am a bot. For questions or enquires, please message @rouganstriker#5241."
+  }
+}
