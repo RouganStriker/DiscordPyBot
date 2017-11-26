@@ -22,7 +22,8 @@ class ListenerClient(BaseClient):
         self.relay_client = relay_client
 
         # Import config
-        self.config = json.loads(CONFIG_FILE)
+        with open(CONFIG_FILE) as f:
+            self.config = json.loads(f)
 
         # Ensure the IDs are strings
         bdo_config = self.config['BDOBossDiscord']
