@@ -271,6 +271,9 @@ class RelayCommands(object):
             loop = False
 
             async for message in self.bot.logs_from(callout_channel):
+                if message.pinned:
+                    continue
+
                 await self.bot.delete_message(message)
                 counter += 1
                 loop = True
