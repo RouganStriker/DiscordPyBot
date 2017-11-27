@@ -225,8 +225,6 @@ class RelayClient(BaseClient, commands.Bot):
             boss_name = boss_mapping[boss_name]
             existing_check = lambda message: re.search(boss_name, message.content, re.I)
             status_message.content = "@everyone {0} has spawned".format(boss_name)
-
-        if boss_name:
             embeds = []
             for attachment in status_message.attachments:
                 new_embed = discord.Embed()
@@ -242,6 +240,7 @@ class RelayClient(BaseClient, commands.Bot):
 
         if boss_name:
             # All clear message
+            boss_name = boss_mapping[boss_name.group(0)]
             existing_check = lambda message: re.search(boss_name, message.content, re.I)
 
             for channel in self.status_channels:
