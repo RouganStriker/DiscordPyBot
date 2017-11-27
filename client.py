@@ -83,7 +83,7 @@ class ListenerClient(BaseClient):
             return
 
         from_boss_discord = message.server.id == self.config['BDOBossDiscord']['GuildID']
-        from_bot = message.author.id in self.config['BDOBossDiscord']['BotIDs']
+        from_bot = message.author.bot
 
         if not from_boss_discord or not from_bot:
             # Exit early if the message is not from the boss discord or not send by the bot user
