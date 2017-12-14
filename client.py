@@ -240,8 +240,8 @@ class RelayClient(BaseClient, commands.Bot):
 
         if boss_name:
             # All clear message
-            boss_name = boss_mapping[boss_name.group(0)]
-            existing_check = lambda message: re.search(boss_name, message.content, re.I)
+            boss_name = boss_name.group(0).lower()
+            existing_check = lambda message: re.search(boss_mapping[boss_name], message.content, re.I)
 
             for channel in self.status_channels:
                 await self.purge_from(channel, check=existing_check)
