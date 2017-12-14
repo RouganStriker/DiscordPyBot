@@ -236,7 +236,7 @@ class RelayClient(BaseClient, commands.Bot):
             await self.queue_message(self.status_messages[boss_name], status_message, clear_messages=existing_check, update_existing=existing_check)
             return
 
-        boss_name = re.search(r'({})(?= > all clear)'.format('|'.join(boss_mapping.keys())), status_message.content, re.I)
+        boss_name = re.search(r'({})(?= > all clear)'.format('|'.join(boss_mapping.keys())), status_message.title, re.I)
 
         if boss_name:
             # All clear message

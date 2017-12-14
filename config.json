@@ -2,7 +2,7 @@
   "BDOBossDiscord": {
     "GuildID": 171908522269736969,
     "TimerChannelID": 246364525438173184,
-    "StatusChannelIDs": [172146835656278016, 377528000360480768, 314482624896958464],
+    "StatusChannelIDs": [172146835656278016, 377528000360480768, 314482624896958464, 314482624896958464],
     "NotificationChannelID": 171931874350989312,
     "BotIDs": [312479778391326720, 309255995295531008, 249221836380962816],
     "BossNameMapping": {
@@ -16,7 +16,8 @@
       "nouver": "Nouver",
       "turkey": "Turkey",
       "quint": "Quint",
-      "muraka": "Muraka"
+      "muraka": "Muraka",
+      "yeti": "Yeti",
     }
   },
   "customStrings": {
