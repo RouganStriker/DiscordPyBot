@@ -97,6 +97,24 @@ class ListenerClient(BaseClient):
         elif message.channel.id in self.config['BDOBossDiscord']['StatusChannelIDs']:
             await self.relay_client.on_boss_status_update(message)
 
+    @asyncio.coroutine
+    async def on_member_join(self, member):
+        await self.send_message(member, content=self.config['customStrings']['welcomeDirectMessage'])
+        return
+
+    @asyncio.coroutine
+    async def on_member_update(self, before, after):
+        trigger_roles = set(self.config['roleChangePlugin']['trigger_role_ids'])
+
+        if {role.id for role in before.roles} & trigger_roles:
+            # Don't re-trigger if the member had the roles already
+            return
+
+        if {role.id for role in after.roles} & trigger_roles:
+            await self.send_message(after, content=self.config['roleChangePlugin']['message'])
+
+        return
+
 
 class DelayedMessage(object):
     lock = asyncio.Lock()
@@ -236,7 +254,12 @@ class RelayClient(BaseClient, commands.Bot):
             await self.queue_message(self.status_messages[boss_name], status_message, clear_messages=existing_check, update_existing=existing_check)
             return
 
-        boss_name = re.search(r'({})(?= > all clear)'.format('|'.join(boss_mapping.keys())), status_message.title, re.I)
+        if status_message.embeds:
+            for embed in status_message.embeds:
+                boss_name = re.search(r'({})(?= all clear)'.format('|'.join(boss_mapping.keys())), embed['title'], re.I)
+
+                if boss_name:
+                    break
 
         if boss_name:
             # All clear message
