@@ -97,24 +97,6 @@ class ListenerClient(BaseClient):
         elif message.channel.id in self.config['BDOBossDiscord']['StatusChannelIDs']:
             await self.relay_client.on_boss_status_update(message)
 
-    @asyncio.coroutine
-    async def on_member_join(self, member):
-        await self.send_message(member, content=self.config['customStrings']['welcomeDirectMessage'])
-        return
-
-    @asyncio.coroutine
-    async def on_member_update(self, before, after):
-        trigger_roles = set(self.config['roleChangePlugin']['trigger_role_ids'])
-
-        if {role.id for role in before.roles} & trigger_roles:
-            # Don't re-trigger if the member had the roles already
-            return
-
-        if {role.id for role in after.roles} & trigger_roles:
-            await self.send_message(after, content=self.config['roleChangePlugin']['message'])
-
-        return
-
 
 class DelayedMessage(object):
     lock = asyncio.Lock()
@@ -271,6 +253,25 @@ class RelayClient(BaseClient, commands.Bot):
                 return
 
         logger.error("Unhandled message: id: {} content: {}".format(status_message.id, status_message.content))
+
+
+    @asyncio.coroutine
+    async def on_member_join(self, member):
+        await self.send_message(member, content=self.config['customStrings']['welcomeDirectMessage'])
+        return
+
+    @asyncio.coroutine
+    async def on_member_update(self, before, after):
+        trigger_roles = set(self.config['roleChangePlugin']['trigger_role_ids'])
+
+        if {role.id for role in before.roles} & trigger_roles:
+            # Don't re-trigger if the member had the roles already
+            return
+
+        if {role.id for role in after.roles} & trigger_roles:
+            await self.send_message(after, content=self.config['roleChangePlugin']['message'])
+
+        return
 
 
 class RelayCommands(object):
